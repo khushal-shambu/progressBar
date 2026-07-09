@@ -1,7 +1,6 @@
 """SQLite layer. Thin wrapper, no ORM."""
 import sqlite3
 from datetime import date, datetime
-from pathlib import Path
 from config import DB_PATH
 
 
@@ -21,7 +20,7 @@ def init_db():
             total_hours REAL NOT NULL,
             hours_logged REAL NOT NULL DEFAULT 0,
             deadline TEXT NOT NULL,
-            status TEXT NOT NULL DEFAULT 'active',  -- active | completed | failed
+            status TEXT NOT NULL DEFAULT 'active',  -- active | completed | failed | abandoned
             created_at TEXT NOT NULL,
             closed_at TEXT
         );
@@ -29,7 +28,7 @@ def init_db():
         CREATE TABLE IF NOT EXISTS sessions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             project_id INTEGER NOT NULL,
-            hours REAL NOT NULL,       -- positive for +, negative for correction
+            hours REAL NOT NULL,
             logged_at TEXT NOT NULL,
             FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
         );
@@ -37,15 +36,21 @@ def init_db():
         CREATE TABLE IF NOT EXISTS growth (
             id INTEGER PRIMARY KEY CHECK (id = 1),
             percent REAL NOT NULL DEFAULT 0,
-            cycle_start TEXT NOT NULL  -- ISO date of last May 28 reset
+            cycle_start TEXT NOT NULL
         );
 
         CREATE TABLE IF NOT EXISTS emotional_clicks (
-            click_date TEXT PRIMARY KEY  -- YYYY-MM-DD
+            click_date TEXT PRIMARY KEY
+        );
+
+        CREATE TABLE IF NOT EXISTS timer_state (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            project_id INTEGER,
+            started_at TEXT,
+            extended_until_minutes INTEGER DEFAULT 90
         );
         """)
 
-        # Ensure singleton growth row exists
         row = c.execute("SELECT id FROM growth WHERE id = 1").fetchone()
         if not row:
             c.execute(
@@ -53,9 +58,13 @@ def init_db():
                 (date.today().isoformat(),),
             )
 
+        row = c.execute("SELECT id FROM timer_state WHERE id = 1").fetchone()
+        if not row:
+            c.execute("INSERT INTO timer_state (id, project_id, started_at) VALUES (1, NULL, NULL)")
+
 
 # ---------- Projects ----------
-def add_project(name: str, total_hours: float, deadline: str) -> int:
+def add_project(name, total_hours, deadline):
     with _conn() as c:
         cur = c.execute(
             "INSERT INTO projects (name, total_hours, deadline, created_at) VALUES (?, ?, ?, ?)",
@@ -71,23 +80,18 @@ def get_active_projects():
         ).fetchall()
 
 
-def get_active_count() -> int:
+def get_active_count():
     with _conn() as c:
-        return c.execute(
-            "SELECT COUNT(*) FROM projects WHERE status = 'active'"
-        ).fetchone()[0]
+        return c.execute("SELECT COUNT(*) FROM projects WHERE status = 'active'").fetchone()[0]
 
 
-def update_project_hours(project_id: int, new_hours: float):
+def update_project_hours(project_id, new_hours):
     with _conn() as c:
-        c.execute(
-            "UPDATE projects SET hours_logged = ? WHERE id = ?",
-            (new_hours, project_id),
-        )
+        c.execute("UPDATE projects SET hours_logged = ? WHERE id = ?", (new_hours, project_id))
 
 
-def close_project(project_id: int, status: str):
-    """status = 'completed' or 'failed'"""
+def close_project(project_id, status):
+    """status = 'completed' | 'failed' | 'abandoned'"""
     with _conn() as c:
         c.execute(
             "UPDATE projects SET status = ?, closed_at = ? WHERE id = ?",
@@ -95,7 +99,7 @@ def close_project(project_id: int, status: str):
         )
 
 
-def log_session(project_id: int, hours: float):
+def log_session(project_id, hours):
     with _conn() as c:
         c.execute(
             "INSERT INTO sessions (project_id, hours, logged_at) VALUES (?, ?, ?)",
@@ -109,26 +113,49 @@ def get_growth():
         return c.execute("SELECT percent, cycle_start FROM growth WHERE id = 1").fetchone()
 
 
-def set_growth(percent: float, cycle_start: str = None):
+def set_growth(percent, cycle_start=None):
     with _conn() as c:
         if cycle_start:
-            c.execute(
-                "UPDATE growth SET percent = ?, cycle_start = ? WHERE id = 1",
-                (percent, cycle_start),
-            )
+            c.execute("UPDATE growth SET percent = ?, cycle_start = ? WHERE id = 1", (percent, cycle_start))
         else:
             c.execute("UPDATE growth SET percent = ? WHERE id = 1", (percent,))
 
 
-# ---------- Emotional clicks ----------
-def emotional_clicks_today(today_iso: str) -> int:
+# ---------- Emotional ----------
+def emotional_clicks_today(today_iso):
     with _conn() as c:
         return c.execute(
-            "SELECT COUNT(*) FROM emotional_clicks WHERE click_date = ?",
-            (today_iso,),
+            "SELECT COUNT(*) FROM emotional_clicks WHERE click_date = ?", (today_iso,)
         ).fetchone()[0]
 
 
-def record_emotional_click(today_iso: str):
+def record_emotional_click(today_iso):
     with _conn() as c:
         c.execute("INSERT INTO emotional_clicks (click_date) VALUES (?)", (today_iso,))
+
+
+# ---------- Timer ----------
+def get_timer():
+    with _conn() as c:
+        return c.execute("SELECT project_id, started_at, extended_until_minutes FROM timer_state WHERE id = 1").fetchone()
+
+
+def start_timer(project_id):
+    with _conn() as c:
+        c.execute(
+            "UPDATE timer_state SET project_id = ?, started_at = ?, extended_until_minutes = 90 WHERE id = 1",
+            (project_id, datetime.now().isoformat()),
+        )
+
+
+def extend_timer(new_cap_minutes):
+    with _conn() as c:
+        c.execute(
+            "UPDATE timer_state SET extended_until_minutes = ? WHERE id = 1",
+            (new_cap_minutes,),
+        )
+
+
+def clear_timer():
+    with _conn() as c:
+        c.execute("UPDATE timer_state SET project_id = NULL, started_at = NULL, extended_until_minutes = 90 WHERE id = 1")
