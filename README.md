@@ -1,7 +1,7 @@
 
 # ProgressBar
 
-Personal progress tracker. Inverted health bars per project (boss HP), meta-bar for yearly growth, resets on May 28.
+Personal progress tracker.
 
 ## Setup
 
