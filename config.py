@@ -21,20 +21,5 @@ TIMER_EXTEND_MINUTES = 90
 MAX_ACTIVE_PROJECTS = 5
 
 
-if platform.system() == "Windows":
-    DATA_DIR = (
-        Path.home()
-        / "OneDrive - BURNAC PRODUCE LIMITED"
-        / "ProgressBar"
-    )
-else:
-    DATA_DIR = (
-        Path.home()
-        / "Library"
-        / "CloudStorage"
-        / "OneDrive-BURNACPRODUCELIMITED"
-        / "ProgressBar"
-    )
-
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 DB_PATH = DATA_DIR / "progressbar.db"
