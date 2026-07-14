@@ -1,6 +1,7 @@
 """App-wide constants and paths."""
 from pathlib import Path
 import os
+import platform
 
 APP_NAME = "ProgressBar"
 
@@ -13,25 +14,27 @@ META_RESET_MONTH = 5
 META_RESET_DAY = 28
 
 # Timer
-TIMER_PROMPT_MINUTES = 90      # non-blocking prompt at 1h30m
-TIMER_EXTEND_MINUTES = 90      # extend by this much if user keeps going
+TIMER_PROMPT_MINUTES = 90
+TIMER_EXTEND_MINUTES = 90
 
 # Limits
 MAX_ACTIVE_PROJECTS = 5
 
-def _resolve_data_dir() -> Path:
-    candidates = [
-        Path.home() / "OneDrive" / APP_NAME,
-        Path.home() / "OneDrive - Personal" / APP_NAME,
-        Path.home() / f".{APP_NAME.lower()}",
-    ]
-    if os.getenv("PROGRESSBAR_DATA_DIR"):
-        return Path(os.getenv("PROGRESSBAR_DATA_DIR"))
-    for c in candidates:
-        if c.parent.exists():
-            return c
-    return candidates[-1]
 
-DATA_DIR = _resolve_data_dir()
+if platform.system() == "Windows":
+    DATA_DIR = (
+        Path.home()
+        / "OneDrive - BURNAC PRODUCE LIMITED"
+        / "ProgressBar"
+    )
+else:
+    DATA_DIR = (
+        Path.home()
+        / "Library"
+        / "CloudStorage"
+        / "OneDrive-BURNACPRODUCELIMITED"
+        / "ProgressBar"
+    )
+
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 DB_PATH = DATA_DIR / "progressbar.db"
