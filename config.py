@@ -14,8 +14,8 @@ META_RESET_MONTH = 5
 META_RESET_DAY = 28
 
 # Timer
-TIMER_PROMPT_MINUTES = 90      # non-blocking prompt at 1h30m
-TIMER_EXTEND_MINUTES = 90      # extend by this much if user keeps going
+TIMER_PROMPT_MINUTES = 90
+TIMER_EXTEND_MINUTES = 90
 
 # Limits
 MAX_ACTIVE_PROJECTS = 5
