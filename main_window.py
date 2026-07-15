@@ -59,6 +59,13 @@ class MainWindow(QMainWindow):
         self.meta_bar.setMinimumHeight(26)
         meta_layout.addWidget(self.meta_bar)
 
+
+        self.meta_text_label = QLabel()
+        self.meta_text_label.setAlignment(Qt.AlignCenter)
+        self.meta_text_label.setStyleSheet("font-size: 11pt; font-weight: bold;")
+        meta_layout.addWidget(self.meta_text_label)
+
+
         meta_btn_row = QHBoxLayout()
         self.emotional_btn = QPushButton("I grew emotionally / financially today")
         self.emotional_btn.clicked.connect(self._on_emotional_click)
@@ -116,11 +123,18 @@ class MainWindow(QMainWindow):
             self._update_timer_display()
 
     def _refresh_meta_bar(self):
+
         pct = growth.current_percent()
         self.meta_bar.setValue(int(pct * 10))
+
         today = date.today()
         reset_year = today.year if today < date(today.year, 5, 28) else today.year + 1
-        self.meta_bar.setFormat(f"{pct:.1f}% — Resets May 28, {reset_year}")
+
+        text = f"{pct:.1f}% — Cycle: May 28 to May 28, {reset_year}"
+
+        self.meta_bar.setFormat(text)
+        self.meta_text_label.setText(text)
+
 
     # ---------- Add / Log / Emotional ----------
     def _on_add_project(self):
