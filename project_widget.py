@@ -29,7 +29,7 @@ class ProjectWidget(QWidget):
         # Row 1: name (bigger) + deadline
         top = QHBoxLayout()
         self.name_label = QLabel(
-            f"<span style='font-size:18pt; font-weight:bold;'>{self.name}</span>"
+            f"<span style='font-size:22pt; font-weight:bold;'>{self.name}</span>"
         )
         self.deadline_label = QLabel()
         self.deadline_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
