@@ -55,7 +55,7 @@ class MainWindow(QMainWindow):
 
         self.meta_bar = QProgressBar()
         self.meta_bar.setRange(0, 1000)
-        self.meta_bar.setTextVisible(True)
+        self.meta_bar.setTextVisible(False)
         self.meta_bar.setMinimumHeight(26)
         meta_layout.addWidget(self.meta_bar)
 
@@ -132,7 +132,7 @@ class MainWindow(QMainWindow):
 
         text = f"{pct:.1f}% — Cycle: May 28 to May 28, {reset_year}"
 
-        self.meta_bar.setFormat(text)
+        #self.meta_bar.setFormat(text)
         self.meta_text_label.setText(text)
 
 
