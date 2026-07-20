@@ -159,3 +159,75 @@ def extend_timer(new_cap_minutes):
 def clear_timer():
     with _conn() as c:
         c.execute("UPDATE timer_state SET project_id = NULL, started_at = NULL, extended_until_minutes = 90 WHERE id = 1")
+
+
+# ---------- Reflection / Stats ----------
+def get_reflection_stats():
+    """
+    Returns high-level stats for the current reflection screen.
+
+    Note:
+    - total_hours_logged only counts positive session hours.
+    - Corrections/subtractions are ignored for total effort.
+    """
+    with _conn() as c:
+        total_hours = c.execute(
+            """
+            SELECT COALESCE(SUM(hours), 0)
+            FROM sessions
+            WHERE hours > 0
+            """
+        ).fetchone()[0]
+
+        total_sessions = c.execute(
+            """
+            SELECT COUNT(*)
+            FROM sessions
+            WHERE hours > 0
+            """
+        ).fetchone()[0]
+
+        active_bosses = c.execute(
+            "SELECT COUNT(*) FROM projects WHERE status = 'active'"
+        ).fetchone()[0]
+
+        completed_bosses = c.execute(
+            "SELECT COUNT(*) FROM projects WHERE status = 'completed'"
+        ).fetchone()[0]
+
+        failed_bosses = c.execute(
+            "SELECT COUNT(*) FROM projects WHERE status = 'failed'"
+        ).fetchone()[0]
+
+        abandoned_bosses = c.execute(
+            "SELECT COUNT(*) FROM projects WHERE status = 'abandoned'"
+        ).fetchone()[0]
+
+        significant_growth_events = c.execute(
+            "SELECT COUNT(*) FROM emotional_clicks"
+        ).fetchone()[0]
+
+        return {
+            "total_hours": total_hours,
+            "total_sessions": total_sessions,
+            "active_bosses": active_bosses,
+            "completed_bosses": completed_bosses,
+            "failed_bosses": failed_bosses,
+            "abandoned_bosses": abandoned_bosses,
+            "significant_growth_events": significant_growth_events,
+        }
+
+
+def get_completed_projects(limit=10):
+    """Returns recently completed bosses for the Hall/Reflection preview."""
+    with _conn() as c:
+        return c.execute(
+            """
+            SELECT id, name, total_hours, hours_logged, deadline, created_at, closed_at
+            FROM projects
+            WHERE status = 'completed'
+            ORDER BY closed_at DESC
+            LIMIT ?
+            """,
+            (limit,),
+        ).fetchall()

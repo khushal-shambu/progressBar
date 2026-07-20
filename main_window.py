@@ -11,6 +11,7 @@ import growth
 from config import MAX_ACTIVE_PROJECTS, TIMER_PROMPT_MINUTES, TIMER_EXTEND_MINUTES
 from dialogs import AddProjectDialog, LogHoursDialog
 from project_widget import ProjectWidget
+from reflection_dialog import ReflectionDialog
 
 
 class MainWindow(QMainWindow):
@@ -80,9 +81,15 @@ class MainWindow(QMainWindow):
             "<span style='font-size:21pt; font-weight:bold;'>Active projects</span>"
         ))
         header_row.addStretch()
+        
+        self.reflection_btn = QPushButton("Reflection")
+        self.reflection_btn.clicked.connect(self._on_reflection)
+        header_row.addWidget(self.reflection_btn)
+
         self.add_btn = QPushButton("+ New project")
         self.add_btn.clicked.connect(self._on_add_project)
         header_row.addWidget(self.add_btn)
+
         root.addLayout(header_row)
 
         # Scrollable list
@@ -135,6 +142,11 @@ class MainWindow(QMainWindow):
         #self.meta_bar.setFormat(text)
         self.meta_text_label.setText(text)
 
+
+    # ---------- Reflection ----------
+    def _on_reflection(self):
+        dlg = ReflectionDialog(self)
+        dlg.exec()
 
     # ---------- Add / Log / Emotional ----------
     def _on_add_project(self):
@@ -337,5 +349,5 @@ class MainWindow(QMainWindow):
         if growth.current_percent() >= 100.0:
             QMessageBox.information(
                 self, "🎆 FIREWORKS 🎆",
-                "You hit 100% growth for the cycle.\n\n(V2: actual fireworks animation.)",
+                "You hit 100% growth for the cycle.",
             )
