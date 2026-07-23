@@ -10,6 +10,7 @@ class ProjectWidget(QWidget):
     log_requested = Signal(int, str)          # (project_id, 'add' | 'subtract')
     timer_toggle_requested = Signal(int)      # project_id
     delete_requested = Signal(int, str)       # (project_id, name)
+    edit_requested = Signal(int)              # project_id
 
     def __init__(self, project_row):
         super().__init__()
@@ -53,6 +54,9 @@ class ProjectWidget(QWidget):
         self.delete_btn = QPushButton("🗑")
         self.delete_btn.setToolTip("Delete project")
         self.delete_btn.setFixedWidth(36)
+        self.edit_btn = QPushButton("✎")
+        self.edit_btn.setToolTip("Edit project name or total hours")
+        self.edit_btn.setFixedWidth(36)
 
         self.timer_btn.clicked.connect(
             lambda: self.timer_toggle_requested.emit(self.project_id)
@@ -65,7 +69,11 @@ class ProjectWidget(QWidget):
         )
         self.delete_btn.clicked.connect(
             lambda: self.delete_requested.emit(self.project_id, self.name)
+        )        
+        self.edit_btn.clicked.connect(
+            lambda: self.edit_requested.emit(self.project_id)
         )
+
 
         bottom.addWidget(self.hours_label)
         bottom.addStretch()
@@ -74,6 +82,16 @@ class ProjectWidget(QWidget):
         bottom.addWidget(self.plus_btn)
         bottom.addWidget(self.delete_btn)
         outer.addLayout(bottom)
+
+                
+        bottom.addWidget(self.hours_label)
+        bottom.addStretch()
+        bottom.addWidget(self.timer_btn)
+        bottom.addWidget(self.minus_btn)
+        bottom.addWidget(self.plus_btn)
+        bottom.addWidget(self.edit_btn)
+        bottom.addWidget(self.delete_btn)
+
 
     def refresh(self):
         remaining_pct = max(0.0, 100.0 - (self.hours_logged / self.total_hours * 100.0))

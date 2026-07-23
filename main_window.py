@@ -12,6 +12,7 @@ from config import MAX_ACTIVE_PROJECTS, TIMER_PROMPT_MINUTES, TIMER_EXTEND_MINUT
 from dialogs import AddProjectDialog, LogHoursDialog
 from project_widget import ProjectWidget
 from reflection_dialog import ReflectionDialog
+from dialogs import AddProjectDialog, LogHoursDialog, EditProjectDialog
 
 
 class MainWindow(QMainWindow):
@@ -117,13 +118,16 @@ class MainWindow(QMainWindow):
             self.projects_layout.addWidget(empty)
             return
 
+        
         for row in rows:
             w = ProjectWidget(row)
             w.log_requested.connect(self._on_log_request)
             w.timer_toggle_requested.connect(self._on_timer_toggle)
             w.delete_requested.connect(self._on_delete_request)
+            w.edit_requested.connect(self._on_edit_request)   # NEW
             self.projects_layout.addWidget(w)
             self.project_widgets[row["id"]] = w
+
 
         # Restore timer visual if one is running
         if self.active_timer_project_id in self.project_widgets:
@@ -215,6 +219,33 @@ class MainWindow(QMainWindow):
             self.timer_prompted = False
         db.close_project(project_id, "abandoned")
         self._reload_projects()
+
+    
+    # ---------- Edit ----------
+    def _on_edit_request(self, project_id):
+        pw = self.project_widgets[project_id]
+
+        dlg = EditProjectDialog(
+            current_name=pw.name,
+            current_total_hours=pw.total_hours,
+            hours_logged=pw.hours_logged,
+            parent=self,
+        )
+
+        if not dlg.exec():
+            return
+
+        new_name, new_total = dlg.values()
+
+        try:
+            db.update_project(project_id, new_name, new_total)
+        except ValueError as e:
+            QMessageBox.warning(self, "Cannot edit", str(e))
+            return
+
+        # Reload so widget reflects new values
+        self._reload_projects()
+
 
     # ---------- Timer ----------
     def _on_timer_toggle(self, project_id):
