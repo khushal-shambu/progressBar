@@ -231,3 +231,36 @@ def get_completed_projects(limit=10):
             """,
             (limit,),
         ).fetchall()
+
+# ---------- Edit Project ----------
+def update_project(project_id, new_name, new_total_hours):
+    """
+    Edit a project's name and/or total hours.
+
+    Rules enforced at DB level:
+    - new_total_hours must be >= current hours_logged
+      (you can't shrink a boss below what you've already done)
+    """
+    with _conn() as c:
+        current = c.execute(
+            "SELECT hours_logged FROM projects WHERE id = ?",
+            (project_id,),
+        ).fetchone()
+
+        if not current:
+            raise ValueError(f"Project {project_id} not found")
+
+        if new_total_hours < current["hours_logged"]:
+            raise ValueError(
+                f"Cannot reduce total below hours already logged "
+                f"({current['hours_logged']:.1f} hrs)."
+            )
+
+        c.execute(
+            """
+            UPDATE projects
+            SET name = ?, total_hours = ?
+            WHERE id = ?
+            """,
+            (new_name, new_total_hours, project_id),
+        )
